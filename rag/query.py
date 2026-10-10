@@ -1,9 +1,9 @@
 import os
-import json
 import chromadb
 from chromadb.utils import embedding_functions
 from groq import Groq
 from dotenv import load_dotenv
+from verify import verify_document
 
 load_dotenv("../.env")
 
@@ -24,20 +24,40 @@ groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 def answer_question(question: str, n_results: int = 3):
     results = collection.query(query_texts=[question], n_results=n_results)
-
     chunks = results["documents"][0]
     metadatas = results["metadatas"][0]
 
     if not chunks:
-        print("No relevant, verified documents found in the corpus.")
+        print("No relevant documents found in the corpus.")
         return
 
-    context_parts = []
+    # Re-verify each distinct source document against the chain at query time
+    verified = {}
+    for meta in metadatas:
+        h = meta["doc_hash"]
+        if h not in verified:
+            verified[h] = verify_document(h)
+
+    trusted = []
     for chunk, meta in zip(chunks, metadatas):
-        context_parts.append(
-            f"[Source: {meta['source']} | Doc hash: {meta['doc_hash'][:10]}...]\n{chunk}"
-        )
-    context = "\n\n".join(context_parts)
+        v = verified[meta["doc_hash"]]
+        short = meta["doc_hash"][:10]
+        if not v["valid"]:
+            print(f"✗ EXCLUDED chunk from {short}...: {v['reason']}")
+            continue
+        if chunk not in " ".join(v["content"].split()):
+            print(f"✗ EXCLUDED chunk from {short}...: text does not match the verified document")
+            continue
+        trusted.append((chunk, meta))
+
+    if not trusted:
+        print("No retrieved chunk passed verification. Refusing to answer.")
+        return
+
+    context = "\n\n".join(
+        f"[Source: {m['source']} | Doc hash: {m['doc_hash'][:10]}...]\n{c}"
+        for c, m in trusted
+    )
 
     prompt = f"""Answer the question using ONLY the context below. If the context doesn't contain the answer, say so.
 
@@ -53,12 +73,11 @@ Answer:"""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    answer = response.choices[0].message.content
-
-    print("Answer:\n", answer)
-    print("\n--- Sources used (all verified, hash-matched, 2-of-3 confirmed) ---")
-    for meta in metadatas:
-        print(f"  - {meta['source']} (doc hash: {meta['doc_hash']})")
+    print("Answer:\n", response.choices[0].message.content)
+    print("\n--- Sources (re-verified against the chain at query time) ---")
+    for h in dict.fromkeys(m["doc_hash"] for _, m in trusted):
+        src = verified[h]["source"]
+        print(f"  ✓ {src} (doc hash: {h})")
 
 
 if __name__ == "__main__":

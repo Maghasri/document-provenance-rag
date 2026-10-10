@@ -72,6 +72,7 @@ rag/verify.py                    on-chain + IPFS integrity verification
 rag/ingest.py                    verify, chunk, embed, store
 rag/query.py                     retrieval + generation with sources
 rag/demo_tamper.py               tamper-detection demo
+rag/demo_poison.py   injects a fake chunk to show query-time exclusion
 ```
 
 ## Setup
@@ -135,13 +136,11 @@ Notes:
 - **Garbage in, garbage out:** a document that is already poisoned before registration, or bad content from an approved source, will be confirmed like any other. Registrars are the control for this.
 - **The source allowlist is a local config file.** It is not itself decentralized.
 - **Registrars are three accounts I control** in this demo. The trust model is only as strong as the independence of the real registrars.
-- **Tampering after verification** (at the chunking, embedding or vector-store stage) is outside what the hash check covers.
-- **Verification currently happens at ingestion.** Re-checking each retrieved document at query time is planned (see Roadmap).
+- **Retrieval-ranking manipulation** is not covered. Query-time checks exclude chunks whose document hash is unregistered or unconfirmed, and chunks whose text isn't in the verified document, but they can't tell if embeddings were altered to change which chunks rank highest.
 - Testnet only. A production deployment would use a Layer-2 network such as Polygon or Arbitrum.
 
 ## Roadmap
 
-- Re-verify retrieved documents against the chain at query time
 - Document versioning and updates
 - Measure end-to-end latency on Sepolia
 - Convert gas figures to cost on a Layer-2 network
