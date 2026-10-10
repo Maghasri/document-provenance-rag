@@ -35,19 +35,20 @@ async function verify(registry, hash) {
 }
 
 async function main() {
-  const [r1, r2, r3] = await hre.ethers.getSigners();
+  const [owner,r1, r2, r3] = await hre.ethers.getSigners();
   const Registry = await hre.ethers.getContractFactory("DocumentRegistry");
-  const registry = await Registry.deploy(r1.address, r2.address, r3.address);
+  const registry = await Registry.connect(owner).deploy(r1.address, r2.address, r3.address);
   await registry.waitForDeployment();
   const deployGas = Number((await registry.deploymentTransaction().wait()).gasUsed);
 
   // 1. Gas per registration (propose + confirming vote)
   const docs = Array.from({ length: N }, (_, i) => makeDoc(i));
-  const proposeGas = [], voteGas = [];
+  const proposeGas = [], voteGas = [], confirmGas = [];
   for (const d of docs) {
     const h = sha256(d);
-    proposeGas.push(Number((await (await registry.connect(r1).proposeDocument(h, CID, SRC)).wait()).gasUsed));
-    voteGas.push(Number((await (await registry.connect(r2).voteToConfirm(h)).wait()).gasUsed));
+    proposeGas.push(Number((await (await registry.connect(owner).proposeDocument(h, CID, SRC)).wait()).gasUsed));
+    voteGas.push(Number((await (await registry.connect(r1).voteToConfirm(h)).wait()).gasUsed));
+    confirmGas.push(Number((await (await registry.connect(r2).voteToConfirm(h)).wait()).gasUsed));
   }
 
   // 2. Verification latency (hash + on-chain lookup) on untouched docs
@@ -78,8 +79,9 @@ async function main() {
     gas: {
       deploy: deployGas,
       propose_mean: Math.round(mean(proposeGas)),
-      vote_mean: Math.round(mean(voteGas)),
-      total_per_confirmed_doc: Math.round(mean(proposeGas) + mean(voteGas)),
+      first_vote_mean: Math.round(mean(voteGas)),
+      confirming_vote_mean: Math.round(mean(confirmGas)),
+      total_per_confirmed_doc: Math.round(mean(proposeGas) + mean(voteGas) + mean(confirmGas)), 
     },
     verify_latency_ms: { mean: +mean(lat).toFixed(2), p95: +p95(lat).toFixed(2), network: hre.network.name },
     false_positive_rate: `${N - okCount}/${N} originals wrongly rejected`,
