@@ -59,7 +59,7 @@ def answer_question(question: str, n_results: int = 3):
         for c, m in trusted
     )
 
-    prompt = f"""Answer the question using ONLY the context below. If the context doesn't contain the answer, say so.
+    prompt = f"""Answer the question using ONLY the context below. If the context doesn't contain the answer, reply with exactly:NO_ANSWER.
 
 Context:
 {context}
@@ -73,8 +73,12 @@ Answer:"""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    print("Answer:\n", response.choices[0].message.content)
-    print("\n--- Sources (re-verified against the chain at query time) ---")
+    answer = response.choices[0].message.content
+    print("Answer:\n", answer)
+    if "NO_ANSWER" in answer:
+        print("No verified document answers this question.")
+        return
+    print("--- Retrieved and verified context ---")
     for h in dict.fromkeys(m["doc_hash"] for _, m in trusted):
         src = verified[h]["source"]
         print(f"  ✓ {src} (doc hash: {h})")
@@ -84,3 +88,4 @@ if __name__ == "__main__":
     import sys
     q = " ".join(sys.argv[1:]) or "What is this document about?"
     answer_question(q)
+

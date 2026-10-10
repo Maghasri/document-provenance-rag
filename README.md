@@ -126,10 +126,11 @@ Measured on a local Hardhat network with 100 synthetic documents:
 | Verification latency | 0.30 ms mean, 0.36 ms p95 (in-memory network, no RPC or IPFS) |
 | Originals wrongly rejected | 0 / 100 |
 | Tampered variants rejected | 400 / 400 (bit flip, appended byte, truncation, overwritten chunk) |
+| End-to-end verification on Sepolia (20 runs) | mean 7.4 s, median 6.9 s, p95 10.2 s |
 
 Notes:
 - The 100% detection rate follows from SHA-256: any change produces a hash that was never registered. It demonstrates the avalanche property, not a heuristic detector.
-- Latency on a real network is dominated by the RPC call and IPFS gateway fetch, and has not been measured here yet.
+- Sepolia latency breakdown: IPFS public-gateway fetch about 5.6 s, RPC read about 1.7 s, SHA-256 under 0.01 ms. The cost is in network calls, not hashing or contract logic. The 0.30 ms figure in the table measures the in-memory test network only.
 
 ## Limitations
 
@@ -142,7 +143,7 @@ Notes:
 ## Roadmap
 
 - Document versioning and updates
-- Measure end-to-end latency on Sepolia
+- Cache verified content with a short TTL, or use a dedicated Pinata gateway, to cut IPFS fetch time
 - Convert gas figures to cost on a Layer-2 network
 
 ## Version history

@@ -1,0 +1,26 @@
+{
+  "docs": 100,
+  "gas": {
+    "deploy": 1442735,
+    "propose_mean": 193726,
+    "first_vote_mean": 74033,
+    "confirming_vote_mean": 80940,
+    "total_per_confirmed_doc": 348700
+  },
+  "verify_latency_ms": {
+    "mean": 0.3,
+    "p95": 0.36,
+    "network": "hardhat"
+  },
+  "false_positive_rate": "0/100 originals wrongly rejected",
+  "tamper_detection": {
+    "overall": "400/400",
+    "rate": 1,
+    "by_type": {
+      "flip_one_bit": "100/100",
+      "append_space": "100/100",
+      "truncate_10_bytes": "100/100",
+      "overwrite_chunk": "100/100"
+    }
+  }
+}
