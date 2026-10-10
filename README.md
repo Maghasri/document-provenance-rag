@@ -131,6 +131,7 @@ Measured on a local Hardhat network with 100 synthetic documents:
 Notes:
 - The 100% detection rate follows from SHA-256: any change produces a hash that was never registered. It demonstrates the avalanche property, not a heuristic detector.
 - Sepolia latency breakdown: IPFS public-gateway fetch about 5.6 s, RPC read about 1.7 s, SHA-256 under 0.01 ms. The cost is in network calls, not hashing or contract logic. The 0.30 ms figure in the table measures the in-memory test network only.
+- Estimated cost on a Layer-2 (ETH ≈ $2,504): a confirmed document costs 348,700 gas, which is about $0.01 to $0.09 at 0.01 to 0.1 gwei, plus a small L1 data-posting fee. Deployment (1,442,735 gas) is about $0.04 to $0.36. These use assumed gas prices, not measured ones; cost = gas × gwei × 1e-9 × ETH price.
 
 ## Limitations
 
@@ -144,7 +145,7 @@ Notes:
 
 - Document versioning and updates
 - Cache verified content with a short TTL, or use a dedicated Pinata gateway, to cut IPFS fetch time
-- Convert gas figures to cost on a Layer-2 network
+- Measure real gas cost by deploying to an L2 testnet (Arbitrum Sepolia or Base Sepolia)
 
 ## Version history
 
